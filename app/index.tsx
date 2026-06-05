@@ -28,7 +28,9 @@ export default function Login() {
       };
 
       try {
-        const response = await fetch('http://10.28.78.229:3000/user/login', {
+        const apiUrl = process.env.EXPO_PUBLIC_API_URL;
+
+        const response = await fetch(`${apiUrl}/user/login`, {
           method: 'POST',
           headers: {'Content-Type': 'application/json'},
           body: JSON.stringify(loginData),
@@ -36,15 +38,11 @@ export default function Login() {
 
         if (response.ok) {
           const data = await response.json();
-          console.log(data.user);
-
           await AsyncStorage.setItem('user', JSON.stringify(data.user));
-
-          alert('Login Success');
+          router.push('/(tabs)/home');
         } else {
           const data = await response.json();
           console.log(data.msg);
-          alert(data.msg);
         }
       } catch (err) {
         console.error(err);
