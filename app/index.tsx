@@ -2,7 +2,7 @@ import AntDesign from '@expo/vector-icons/AntDesign';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {useRouter} from 'expo-router';
-import {useState} from 'react';
+import {useEffect, useState} from 'react';
 import {
   Image,
   KeyboardAvoidingView,
@@ -19,6 +19,23 @@ import {SafeAreaView} from 'react-native-safe-area-context';
 export default function Login() {
   const [mobile, setMobile] = useState('');
   const [password, setPassworde] = useState('');
+  const router = useRouter();
+
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    async function checkUser() {
+      const user = await AsyncStorage.getItem('user');
+
+      if (user !== null) {
+        router.replace('/(tabs)/home');
+      } else {
+        setIsLoading(false);
+      }
+    }
+
+    checkUser();
+  }, []);
 
   async function signIn() {
     if (mobile !== '' && password !== '') {
@@ -50,66 +67,70 @@ export default function Login() {
     }
   }
 
-  const router = useRouter();
-
-  return (
-    <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-        <ScrollView
-          contentContainerStyle={{flexGrow: 1, gap: 18, alignItems: 'center'}}>
-          <Image
-            source={require('../assets/images/bg-signin.jpg')}
-            style={styles.img}
-          />
-
-          <View style={styles.textView}>
-            <Text style={styles.titleTxt}>SignIn</Text>
-            <Text style={styles.descriptionTxt}>
-              Please Sign in to continue.
-            </Text>
-          </View>
-
-          <View style={styles.inputView}>
-            <AntDesign name="user-add" size={20} color="#696969" />
-            <TextInput
-              style={styles.input}
-              placeholder="Enter your Mobile"
-              onChangeText={setMobile}
-            />
-          </View>
-
-          <View style={styles.inputView}>
-            <MaterialIcons name="lock-outline" size={22} color="#696969" />
-            <TextInput
-              style={styles.input}
-              placeholder="Enter your Password"
-              onChangeText={setPassworde}
-            />
-          </View>
-
-          <Pressable
-            style={styles.btn}
-            onPress={() => {
-              signIn();
+  if (!isLoading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+          <ScrollView
+            contentContainerStyle={{
+              flexGrow: 1,
+              gap: 18,
+              alignItems: 'center',
             }}>
-            <Text style={styles.btnTxt}>Sign In</Text>
-          </Pressable>
+            <Image
+              source={require('../assets/images/bg-signin.jpg')}
+              style={styles.img}
+            />
 
-          <View style={{flexDirection: 'row', gap: 10}}>
-            <Text style={{color: '#8b8b8b'}}>{"Don't have account?"}</Text>
+            <View style={styles.textView}>
+              <Text style={styles.titleTxt}>SignIn</Text>
+              <Text style={styles.descriptionTxt}>
+                Please Sign in to continue.
+              </Text>
+            </View>
+
+            <View style={styles.inputView}>
+              <AntDesign name="user-add" size={20} color="#696969" />
+              <TextInput
+                style={styles.input}
+                placeholder="Enter your Mobile"
+                onChangeText={setMobile}
+              />
+            </View>
+
+            <View style={styles.inputView}>
+              <MaterialIcons name="lock-outline" size={22} color="#696969" />
+              <TextInput
+                style={styles.input}
+                placeholder="Enter your Password"
+                onChangeText={setPassworde}
+              />
+            </View>
+
             <Pressable
-              style={{height: 30}}
+              style={styles.btn}
               onPress={() => {
-                router.push('/signup');
+                signIn();
               }}>
-              <Text style={{fontWeight: 'bold', fontSize: 15}}>Sign Up</Text>
+              <Text style={styles.btnTxt}>Sign In</Text>
             </Pressable>
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
-  );
+
+            <View style={{flexDirection: 'row', gap: 10}}>
+              <Text style={{color: '#8b8b8b'}}>{"Don't have account?"}</Text>
+              <Pressable
+                style={{height: 30}}
+                onPress={() => {
+                  router.push('/signup');
+                }}>
+                <Text style={{fontWeight: 'bold', fontSize: 15}}>Sign Up</Text>
+              </Pressable>
+            </View>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+    );
+  }
 }
 
 const styles = StyleSheet.create({
