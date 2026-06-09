@@ -5,12 +5,38 @@ import {
   Text,
   TextInput,
   View,
+  FlatList,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import {useEffect, useState} from 'react';
 
 export default function Home() {
+  const [chatData, setChatData] = useState([]);
+
+  async function loadChats() {
+    try {
+      const apiUrl = process.env.EXPO_PUBLIC_API_URL;
+
+      const response = await fetch(
+        apiUrl + '/chat/get-chats?mobile=0760517297',
+      );
+      const data = await response.json();
+      if (response.ok) {
+        setChatData(data);
+      } else {
+        alert(response.status + ' : ' + data.msg);
+      }
+    } catch (error) {
+      console.error('Error loading chats:', error);
+    }
+  }
+
+  useEffect(() => {
+    loadChats();
+  }, []);
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.headerView}>
@@ -28,19 +54,29 @@ export default function Home() {
         <TextInput placeholder="Search" placeholderTextColor={'black'} />
       </View>
 
-      <Pressable style={styles.chatView}>
-        <Image
-          style={styles.profileImage}
-          source={require('../../assets/images/profile/default_profile_image.png')}
-        />
-        <View style={{gap: 5}}>
-          <Text style={{fontWeight: 'bold', fontSize: 15}}>
-            Dhanusha Sathsara
-          </Text>
-          <Text>Hello 😍</Text>
-        </View>
-        <Text style={styles.timeTxt}>15:00</Text>
-      </Pressable>
+      <FlatList
+        data={chatData}
+        renderItem={({item}) => (
+          <Pressable style={styles.chatView}>
+            <Image
+              style={styles.profileImage}
+              source={require('../../assets/images/profile/default_profile_image.png')}
+            />
+
+            <View style={{gap: 5}}>
+              <Text style={{fontWeight: 'bold', fontSize: 15}}>
+                {item.user.fname} {item.user.lname}
+              </Text>
+
+              <Text>{item.last_message.message}</Text>
+            </View>
+
+            <Text style={styles.timeTxt}>
+              {new Date(item.last_message.send_at).toLocaleTimeString()}
+            </Text>
+          </Pressable>
+        )}
+      />
     </SafeAreaView>
   );
 }
@@ -74,6 +110,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 15,
+    marginBottom: 15,
   },
   timeTxt: {
     color: '#686868',
