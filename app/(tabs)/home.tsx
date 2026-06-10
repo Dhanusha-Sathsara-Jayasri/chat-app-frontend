@@ -7,22 +7,48 @@ import {
   View,
   FlatList,
 } from 'react-native';
-import {SafeAreaView} from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import {useEffect, useState} from 'react';
+import { useEffect, useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function Home() {
-  const [chatData, setChatData] = useState([]);
+  const [chatData, setChatData] = useState();
+  const [isRefresh, setIsRefresh] = useState(false);
+  const [userName, setUserName] = useState("");
+  const [userMobile, setUserMobile] = useState("");
 
-  async function loadChats() {
+  useEffect(() => {
+    async function getUser() {
+      const userString = await AsyncStorage.getItem("user");
+
+      if (userString) {
+        const userObject = JSON.parse(userString);
+
+        setUserName(userObject.fname + " " + userObject.lname);
+        setUserMobile(userObject.mobile);
+        loadChats(userObject.mobile);
+      }
+    }
+
+    getUser();
+  }, []);
+
+  async function loadChats(mobile: string) {
+
+    setIsRefresh(true);
+
     try {
       const apiUrl = process.env.EXPO_PUBLIC_API_URL;
 
       const response = await fetch(
-        apiUrl + '/chat/get-chats?mobile=0760517297',
+        apiUrl + '/chat/get-chats?mobile=' + mobile,
       );
+
       const data = await response.json();
+      setIsRefresh(false);
+
       if (response.ok) {
         setChatData(data);
       } else {
@@ -33,16 +59,24 @@ export default function Home() {
     }
   }
 
-  useEffect(() => {
-    loadChats();
-  }, []);
+  function timeFormat(time: string) {
+
+    const formattedTime = new Date(time).toLocaleTimeString("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    });
+
+    return formattedTime;
+
+  }
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.headerView}>
-        <Text style={{fontSize: 18, marginLeft: 10}}>User Name</Text>
+        <Text style={{ fontSize: 25, marginLeft: 10, fontWeight: 'bold' }}>{userName}</Text>
         <MaterialIcons
-          style={{marginRight: 10}}
+          style={{ marginRight: 10 }}
           name="notifications-none"
           size={22}
           color="#686868"
@@ -56,26 +90,34 @@ export default function Home() {
 
       <FlatList
         data={chatData}
-        renderItem={({item}) => (
-          <Pressable style={styles.chatView}>
-            <Image
-              style={styles.profileImage}
-              source={require('../../assets/images/profile/default_profile_image.png')}
-            />
+        renderItem={({ item }) => {
+          return (
+            <Pressable style={styles.chatView}>
+              <Image
+                style={styles.profileImage}
+                source={require('../../assets/images/profile/default_profile_image.png')}
+              />
 
-            <View style={{gap: 5}}>
-              <Text style={{fontWeight: 'bold', fontSize: 15}}>
-                {item.user.fname} {item.user.lname}
+              <View style={{ gap: 5 }}>
+                <Text style={{ fontWeight: 'bold', fontSize: 15 }}>
+                  {item.user.fname} {item.user.lname}
+                </Text>
+
+                <Text>{item.last_message.message}</Text>
+              </View>
+
+              <Text style={styles.timeTxt}>
+                {timeFormat(item.last_message.send_at)}
               </Text>
+            </Pressable>
+          );
+        }}
 
-              <Text>{item.last_message.message}</Text>
-            </View>
+        refreshing={isRefresh}
+        onRefresh={() => {
+          loadChats(userMobile);
+        }}
 
-            <Text style={styles.timeTxt}>
-              {new Date(item.last_message.send_at).toLocaleTimeString()}
-            </Text>
-          </Pressable>
-        )}
       />
     </SafeAreaView>
   );
